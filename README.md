@@ -1,6 +1,6 @@
 # How to Get a Job
 
-A free, open-source course on getting a white-collar job, in seven steps:
+A free, open-source course on getting a white-collar job, in seven steps. Read it at **[howtogetajob.tech](https://howtogetajob.tech)**.
 
 1. **[Laid off? Reset first](content/steps/reset.mdx)** (optional)
 2. **[Build your point of view and your story](content/steps/story.mdx)**
