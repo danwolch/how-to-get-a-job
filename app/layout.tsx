@@ -14,6 +14,7 @@ export const metadata: Metadata = {
   description: site.description,
   openGraph: { siteName: site.name, type: 'website', locale: 'en_US' },
   twitter: { card: 'summary_large_image' },
+  icons: { apple: '/apple-touch-icon.png' },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

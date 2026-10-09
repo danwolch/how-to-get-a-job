@@ -16,7 +16,7 @@ export function generateStaticParams() {
 export async function generateMetadata({ params }: { params: Promise<{ step: string }> }): Promise<Metadata> {
   const s = getStep((await params).step);
   if (!s) return {};
-  return pageMetadata({ path: `/${s.slug}/`, title: s.seoTitle ?? `${s.title} · How to Get a Job`, description: s.seoDescription ?? s.dek });
+  return pageMetadata({ path: `/${s.slug}/`, title: s.seoTitle ?? `${s.title} · How to Get a Job`, description: s.seoDescription ?? s.dek, image: `/og/${s.slug}.png` });
 }
 
 export default async function StepPage({ params }: { params: Promise<{ step: string }> }) {
