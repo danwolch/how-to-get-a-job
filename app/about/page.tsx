@@ -1,7 +1,13 @@
 import type { Metadata } from 'next';
 import { site } from '@/lib/site.mjs';
+import { pageMetadata } from '@/lib/seo';
 
-export const metadata: Metadata = { title: 'About', description: 'Why this course exists and how to contribute.' };
+export const metadata: Metadata = pageMetadata({
+  path: '/about/',
+  title: 'About · How to Get a Job',
+  description: 'Why this free, open-source job search course exists, who writes it, and how to contribute.',
+  type: 'website',
+});
 
 export default function AboutPage() {
   return (

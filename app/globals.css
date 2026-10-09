@@ -1429,3 +1429,91 @@ img {
     display: block;
   }
 }
+
+/* ───────────────────────── Guides ───────────────────────── */
+
+.related-guides {
+  margin-top: 56px;
+  border-top: 1px solid var(--rule-strong);
+  padding-top: 20px;
+}
+
+.related-title {
+  font-size: 22px;
+  letter-spacing: -0.02em;
+  margin: 0 0 12px;
+}
+
+.related-guides ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.related-guides li {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 14px 0;
+  border-bottom: 1px solid var(--rule);
+}
+
+.related-guides a {
+  font-weight: 600;
+  font-size: 18px;
+  text-decoration: none;
+  letter-spacing: -0.01em;
+}
+
+.related-guides a:hover {
+  color: var(--accent-ink);
+}
+
+.related-guides span {
+  font-family: var(--serif);
+  color: var(--ink-2);
+  font-size: 15.5px;
+  line-height: 1.5;
+}
+
+.guide-list .step-row {
+  grid-template-columns: 1fr auto;
+}
+
+.guide-links {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0 32px;
+}
+
+.guide-links li {
+  border-bottom: 1px solid var(--rule);
+}
+
+.guide-links a {
+  display: block;
+  padding: 12px 0;
+  font-size: 17px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  text-decoration: none;
+}
+
+.guide-links a:hover {
+  color: var(--accent-ink);
+}
+
+.rail-guide > li > a {
+  grid-template-columns: 1fr;
+  font-size: 13.5px;
+  line-height: 1.35;
+}
+
+@media (max-width: 640px) {
+  .guide-links {
+    grid-template-columns: 1fr;
+  }
+}

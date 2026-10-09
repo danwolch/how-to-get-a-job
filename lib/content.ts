@@ -2,8 +2,10 @@ import fs from 'node:fs';
 import path from 'node:path';
 import matter from 'gray-matter';
 import clipsData from '@/content/clips.json';
+import { extractHeadings } from './headings.mjs';
 
 const STEPS_DIR = path.join(process.cwd(), 'content', 'steps');
+const GUIDES_DIR = path.join(process.cwd(), 'content', 'guides');
 
 export type Clip = {
   id: string;
@@ -17,18 +19,46 @@ export type Clip = {
   date: string;
 };
 
-export type StepMeta = {
+/** Fields every page (step or guide) shares. */
+type PageMeta = {
   slug: string;
-  step: number;
   title: string;
-  short: string;
   dek: string;
+  /** Full <title> for search results; the H1 stays `title`. */
+  seoTitle?: string;
+  seoDescription?: string;
+  /** Pinned section ids, keyed by heading text. See lib/headings.mjs. */
+  anchors?: Record<string, string>;
+  updated?: string;
+  body: string;
+};
+
+export type Step = PageMeta & {
+  step: number;
+  short: string;
   time: string;
   optional?: boolean;
   rule: string;
 };
 
-export type Step = StepMeta & { body: string };
+export type Guide = PageMeta & {
+  /** Slug of the step this guide goes deeper on. */
+  related: string;
+};
+
+function readPages<T extends PageMeta>(dir: string): T[] {
+  if (!fs.existsSync(dir)) return [];
+  return fs
+    .readdirSync(dir)
+    .filter((f) => f.endsWith('.mdx'))
+    .map((f) => {
+      const { data, content } = matter(fs.readFileSync(path.join(dir, f), 'utf8'));
+      const page = { ...data, slug: f.replace(/\.mdx$/, ''), body: content } as T;
+      page.title = smart(page.title);
+      page.dek = smart(page.dek);
+      return page;
+    });
+}
 
 export const clips = clipsData as Clip[];
 
@@ -39,40 +69,29 @@ export function getClip(id: string): Clip {
 }
 
 export function getSteps(): Step[] {
-  return fs
-    .readdirSync(STEPS_DIR)
-    .filter((f) => f.endsWith('.mdx'))
-    .map((f) => {
-      const { data, content } = matter(fs.readFileSync(path.join(STEPS_DIR, f), 'utf8'));
-      const meta = data as Omit<StepMeta, 'slug'>;
-      return { ...meta, title: smart(meta.title), dek: smart(meta.dek), rule: smart(meta.rule), slug: f.replace(/\.mdx$/, ''), body: content };
-    })
+  return readPages<Step>(STEPS_DIR)
+    .map((s) => ({ ...s, rule: smart(s.rule) }))
     .sort((a, b) => a.step - b.step);
+}
+
+export function getGuides(): Guide[] {
+  const order = getSteps().map((s) => s.slug);
+  return readPages<Guide>(GUIDES_DIR).sort(
+    (a, b) => order.indexOf(a.related) - order.indexOf(b.related) || a.title.localeCompare(b.title),
+  );
+}
+
+export function getGuide(slug: string): Guide | undefined {
+  return getGuides().find((g) => g.slug === slug);
 }
 
 export function getStep(slug: string): Step | undefined {
   return getSteps().find((s) => s.slug === slug);
 }
 
-export function slugify(text: string): string {
-  return text
-    .toLowerCase()
-    .replace(/[’']/g, '')
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/(^-|-$)/g, '');
-}
-
-/** h2/h3 headings in an MDX body, for the on-this-page rail. Matches rehype-slug's ids for plain-text headings. */
-export function getHeadings(body: string): { depth: 2 | 3; text: string; id: string }[] {
-  const out: { depth: 2 | 3; text: string; id: string }[] = [];
-  let fenced = false;
-  for (const line of body.split('\n')) {
-    if (line.startsWith('```')) fenced = !fenced;
-    if (fenced) continue;
-    const m = /^(##|###) (.+)$/.exec(line);
-    if (m) out.push({ depth: m[1].length as 2 | 3, text: smart(m[2].trim()), id: slugify(m[2].trim()) });
-  }
-  return out;
+/** h2/h3 headings of a page, with the same ids the rendered page uses. */
+export function getHeadings(page: Pick<PageMeta, 'body' | 'anchors'>): { depth: 2 | 3; text: string; id: string }[] {
+  return extractHeadings(page.body, page.anchors).map((h) => ({ ...h, text: smart(h.text) }));
 }
 
 /** Clip ids referenced by a step, in order. */
@@ -92,15 +111,18 @@ export function pad(n: number): string {
   return String(n).padStart(2, '0');
 }
 
-export type PromptEntry = { title: string; text: string; step: Step };
+export type PromptEntry = { title: string; text: string; href: string; source: string };
 
-/** Every <Prompt> in the course, in step order. Prompt bodies are fenced code blocks. */
+const PROMPT_RX = /<Prompt title="([^"]+)">\s*```[a-z]*\n([\s\S]*?)\n```\s*<\/Prompt>/g;
+
+/** Every <Prompt> on the site: steps in order, then guides. Prompt bodies are fenced code blocks. */
 export function getPrompts(): PromptEntry[] {
   const out: PromptEntry[] = [];
   for (const step of getSteps()) {
-    for (const m of step.body.matchAll(/<Prompt title="([^"]+)">\s*```[a-z]*\n([\s\S]*?)\n```\s*<\/Prompt>/g)) {
-      out.push({ title: m[1], text: m[2], step });
-    }
+    for (const m of step.body.matchAll(PROMPT_RX)) out.push({ title: m[1], text: m[2], href: `/${step.slug}/`, source: `Step ${step.step}` });
+  }
+  for (const guide of getGuides()) {
+    for (const m of guide.body.matchAll(PROMPT_RX)) out.push({ title: m[1], text: m[2], href: `/guides/${guide.slug}/`, source: 'Guide' });
   }
   return out;
 }

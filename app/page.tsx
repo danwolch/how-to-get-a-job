@@ -1,18 +1,29 @@
+import type { Metadata } from 'next';
 import Link from 'next/link';
-import { getSteps, clips, pad } from '@/lib/content';
+import { getSteps, getGuides, clips, pad } from '@/lib/content';
+import { pageMetadata } from '@/lib/seo';
+import { JsonLd, homeJsonLd } from '@/components/JsonLd';
 import { CopyButton } from '@/components/CopyButton';
 import { site } from '@/lib/site.mjs';
 
+export const metadata: Metadata = pageMetadata({
+  path: '/',
+  title: 'How to Get a Job: A Free, Step-by-Step Job Search Course',
+  description: site.description,
+  type: 'website',
+});
+
 export default function Home() {
   const steps = getSteps();
+  const guides = getGuides();
   const speakers = [...new Set(clips.map((c) => c.speaker))];
 
   return (
     <div className="home">
+      <JsonLd data={homeJsonLd(steps)} />
       <section className="wrap hero">
         <h1 className="hero-title">
-          How to get
-          <br />a job.
+          How to get <br />a job.
         </h1>
         <div className="hero-lede">
           <p>
@@ -55,6 +66,19 @@ export default function Home() {
             </li>
           ))}
         </ol>
+      </section>
+
+      <section className="wrap split" aria-labelledby="guides-h">
+        <h2 id="guides-h" className="section-title">
+          Guides and templates
+        </h2>
+        <ul className="guide-links">
+          {guides.map((g) => (
+            <li key={g.slug}>
+              <Link href={`/guides/${g.slug}/`}>{g.title}</Link>
+            </li>
+          ))}
+        </ul>
       </section>
 
       <section className="wrap split" aria-labelledby="short-h">

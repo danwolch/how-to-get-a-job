@@ -12,7 +12,8 @@ export const metadata: Metadata = {
   metadataBase: new URL(site.url),
   title: { default: site.name, template: `%s · ${site.name}` },
   description: site.description,
-  openGraph: { title: site.name, description: site.description, type: 'website' },
+  openGraph: { siteName: site.name, type: 'website', locale: 'en_US' },
+  twitter: { card: 'summary_large_image' },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
@@ -29,6 +30,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             </Link>
             <nav className="site-nav" aria-label="Site">
               <Link href="/#steps">Steps</Link>
+              <Link href="/guides/">Guides</Link>
               <Link href="/prompts/">Prompts</Link>
               <Link href="/clips/">Clips</Link>
               <a href={site.repo}>GitHub</a>

@@ -29,10 +29,16 @@ function toMarkdown(body) {
     .replace(/\s*<\/Note>/g, '')
     .replace(/<Checklist>\s*/g, '**Before you move on**\n\n')
     .replace(/\s*<\/Checklist>/g, '')
-    .replace(/\]\(\/([a-z-]+)\/(#[^)]+)?\)/g, (_, slug, hash = '') => `](${site.url}/${slug}/${hash})`)
+    .replace(/\]\((\/[a-z0-9/-]*)(#[^)]+)?\)/g, (_, p, hash = '') => `](${site.url}${p}${hash})`)
     .replace(/\n{3,}/g, '\n\n')
     .trim();
 }
+
+const readDir = (dir) =>
+  fs.existsSync(dir)
+    ? fs.readdirSync(dir).filter((f) => f.endsWith('.mdx')).map((f) => ({ slug: f.replace(/\.mdx$/, ''), ...matter(fs.readFileSync(path.join(dir, f), 'utf8')) }))
+    : [];
+const guides = readDir(path.join(root, 'content/guides'));
 
 const steps = fs
   .readdirSync(stepsDir)
@@ -53,11 +59,18 @@ for (const s of steps) {
   parts.push(md.replace(/^# /, '## ').replace(/\n(#{2,5}) /g, '\n#$1 '));
 }
 
+for (const g of guides) {
+  const md = `# ${g.data.title}\n\n_${g.data.dek}_\n\nWeb: ${site.url}/guides/${g.slug}/\n\n${toMarkdown(g.content)}\n`;
+  fs.writeFileSync(path.join(root, 'public/md', `guide-${g.slug}.md`), md);
+  parts.push(md.replace(/^# /, '## Guide: ').replace(/\n(#{2,5}) /g, '\n#$1 '));
+}
+
 fs.writeFileSync(path.join(root, 'public/course.md'), parts.join('\n\n---\n\n') + '\n');
 fs.writeFileSync(
   path.join(root, 'public/llms.txt'),
   `# ${site.name}\n\n> A free, open-source course on getting a white-collar job, in ${steps.length} steps.\n\n- [Whole course as one Markdown file](${site.url}/course.md)\n` +
     steps.map((s) => `- [Step ${s.data.step}: ${s.data.title}](${site.url}/md/${s.slug}.md): ${s.data.dek}`).join('\n') +
+    (guides.length ? '\n\n## Guides\n\n' + guides.map((g) => `- [${g.data.title}](${site.url}/md/guide-${g.slug}.md): ${g.data.dek}`).join('\n') : '') +
     '\n'
 );
-console.log(`markdown: ${steps.length} steps -> public/course.md`);
+console.log(`markdown: ${steps.length} steps, ${guides.length} guides -> public/course.md`);

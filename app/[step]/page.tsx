@@ -3,7 +3,9 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { Mdx } from '@/components/Mdx';
 import { StepRail } from '@/components/StepRail';
-import { getSteps, getStep, getHeadings, clipIdsIn, pad } from '@/lib/content';
+import { getSteps, getStep, getHeadings, getGuides, clipIdsIn, pad } from '@/lib/content';
+import { pageMetadata } from '@/lib/seo';
+import { JsonLd, stepJsonLd } from '@/components/JsonLd';
 
 export const dynamicParams = false;
 
@@ -13,7 +15,8 @@ export function generateStaticParams() {
 
 export async function generateMetadata({ params }: { params: Promise<{ step: string }> }): Promise<Metadata> {
   const s = getStep((await params).step);
-  return s ? { title: s.title, description: s.dek } : {};
+  if (!s) return {};
+  return pageMetadata({ path: `/${s.slug}/`, title: s.seoTitle ?? `${s.title} · How to Get a Job`, description: s.seoDescription ?? s.dek });
 }
 
 export default async function StepPage({ params }: { params: Promise<{ step: string }> }) {
@@ -24,11 +27,13 @@ export default async function StepPage({ params }: { params: Promise<{ step: str
   const s = steps[i];
   const prev = steps[i - 1];
   const next = steps[i + 1];
-  const headings = getHeadings(s.body);
+  const headings = getHeadings(s);
+  const guides = getGuides().filter((g) => g.related === s.slug);
   const clipCount = clipIdsIn(s.body).length;
 
   return (
     <div className="wrap step-layout">
+      <JsonLd data={stepJsonLd(s, steps.length)} />
       <StepRail steps={steps} current={s.slug} headings={headings} />
       <article className="step">
         <header className="step-head">
@@ -59,8 +64,21 @@ export default async function StepPage({ params }: { params: Promise<{ step: str
           </dl>
         </header>
         <div className="prose" style={{ '--step': `"${s.step}"` } as React.CSSProperties}>
-          <Mdx source={s.body} />
+          <Mdx source={s.body} anchors={s.anchors} />
         </div>
+        {guides.length > 0 && (
+          <aside className="related-guides">
+            <h2 className="related-title">Go deeper</h2>
+            <ul>
+              {guides.map((g) => (
+                <li key={g.slug}>
+                  <Link href={`/guides/${g.slug}/`}>{g.title}</Link>
+                  <span>{g.dek}</span>
+                </li>
+              ))}
+            </ul>
+          </aside>
+        )}
         <nav className="pager" aria-label="Steps">
           {prev ? (
             <Link href={`/${prev.slug}/`} className="pager-link prev">
